@@ -1,0 +1,17 @@
+# Environment & Secrets
+.env
+*.env
+
+# Python Bytecode & Cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Virtual Environments
+venv/
+.venv/
+env/
+
+# Output files (optional to exclude if testing locally, but results.yaml can be checked in if pre-generated)
+# results.yaml

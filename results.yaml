@@ -1,0 +1,34 @@
+results:
+  - source: Privileged Spec 19.3.1
+    parameters:
+      - name: cache_capacity
+        description:
+          The total amount of data that can be stored in the cache, which may
+          vary between implementations.
+        type: implementation-specific
+        constraints: []
+      - name: cache_organization
+        description:
+          The structure and arrangement of the cache, which is implementation-specific
+          and can differ across systems.
+        type: implementation-specific
+        constraints: []
+      - name: cache_block_size
+        description:
+          The size of each cache block, which is implementation-specific but
+          must be uniform throughout the system in the initial CMO extensions.
+        type: implementation-specific
+        constraints:
+          - Shall be uniform throughout system in initial CMO extensions
+  - source: Privileged Spec 2.1
+    parameters: []
+  - source: Custom Test Spec 3.1
+    parameters:
+      - name: vector_register_length
+        description:
+          The length of the vector registers, which is defined by the implementation
+          and must be a power of two within the specified range.
+        type: implementation-defined
+        constraints:
+          - Must be a power of two
+          - Must be between 32 and 65536 bits
