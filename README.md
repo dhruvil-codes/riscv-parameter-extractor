@@ -1,6 +1,6 @@
 # AI-Assisted Extraction of Architectural Parameters from RISC-V Specifications
 
-A clean, reproducible Python project for the LFX Mentorship coding challenge. It demonstrates LLM-based structured information extraction, prompt engineering, hallucination control, and structured YAML generation without unnecessary abstractions.
+A clean, reproducible Python project for the LFX Mentorship coding challenge. It demonstrates LLM-based structured information extraction, prompt engineering, hallucination control, and structured YAML generation using the OpenAI API.
 
 ---
 
@@ -15,11 +15,11 @@ Extract implementation-variable architectural parameters (such as cache capaciti
 ```text
 RISC-V Specification Snippet
              ↓
-    Stage 1: Extractor LLM
+    Stage 1: OpenAI Extractor
              ↓
     Candidate Parameters
              ↓
-    Stage 2: Verifier LLM (Hallucination Control)
+    Stage 2: OpenAI Verifier (Hallucination Control)
              ↓
     Validated Parameters
              ↓
@@ -32,7 +32,7 @@ RISC-V Specification Snippet
 
 1. **Clone & Navigate**:
    ```bash
-   git clone <repo-url>
+   git clone https://github.com/dhruvil-codes/riscv-parameter-extractor.git
    cd riscv-parameter-extractor
    ```
 
@@ -51,14 +51,14 @@ RISC-V Specification Snippet
    ```
 
 4. **Configure Environment Variables**:
-   Copy `.env.example` to `.env` and insert your API key:
+   Copy `.env.example` to `.env` and set your OpenAI API key:
    ```bash
    cp .env.example .env
    ```
-   Set `GEMINI_API_KEY` (or `OPENAI_API_KEY`) in `.env`:
+   Set `OPENAI_API_KEY` in `.env`:
    ```env
-   GEMINI_API_KEY=your_actual_api_key_here
-   LLM_MODEL=gemini-2.5-flash
+   OPENAI_API_KEY=your_actual_api_key_here
+   OPENAI_MODEL=gpt-4o-mini
    ```
 
 ---
@@ -71,17 +71,17 @@ Execute the pipeline CLI:
 python main.py
 ```
 
-The script will process the benchmark snippets, execute the 2-stage LLM pipeline, validate the output schema, and generate `results.yaml`.
+The script will process all snippets in `snippets.py`, execute the 2-stage OpenAI LLM pipeline, validate the output schema, and generate `results.yaml`.
 
 ---
 
 ## LLM Details
 
-- **Primary Provider**: Google Gemini API (`google-genai` SDK) / OpenAI API fallback
-- **Model Name**: Gemini 2.5 Flash (`gemini-2.5-flash`)
-- **Context Window**: 1,048,576 tokens
+- **Provider**: OpenAI (`openai` Python SDK)
+- **Configured Model**: `gpt-4o-mini` (configurable via `OPENAI_MODEL`)
+- **Context Window**: 128,000 tokens (official OpenAI specification)
 - **Temperature**: `0.0` (Deterministic generation for maximum reproducibility and precision)
-- **Selection Rationale**: High reasoning speed, native JSON schema support for structured output, fast inference, and strong zero-shot instruction following.
+- **Selection Rationale**: High reasoning speed, native JSON schema support for structured output via `client.beta.chat.completions.parse`, cost efficiency, and strong zero-shot instruction adherence.
 
 ---
 
@@ -91,7 +91,7 @@ The script will process the benchmark snippets, execute the 2-stage LLM pipeline
 A basic single-pass prompt (`INITIAL_EXTRACTOR_PROMPT` in `prompts.py`) instructed the model to extract architectural parameters based on keyword indicators like *"may"*, *"optional"*, *"should"*, and *"implementation-specific"*.
 
 ### Problem Identified
-Keyword-driven extraction resulted in false positives. Descriptive architectural facts and fixed numbers (e.g. 12-bit encoding spaces, CSR privilege mapping rules) were incorrectly extracted as configurable parameters simply because they described architectural features.
+Keyword-driven extraction produced false positives. Descriptive architectural facts and fixed numbers (e.g. 12-bit encoding spaces, CSR privilege mapping rules) were incorrectly extracted as configurable parameters simply because they appeared in the text.
 
 ### Refinement (`REFINED_EXTRACTOR_PROMPT`)
 The prompt was rewritten to explicitly enforce the core conceptual distinction:
@@ -120,27 +120,34 @@ results:
   - source: Privileged Spec 19.3.1
     parameters:
       - name: cache_capacity
-        description: Capacity of the cache
+        description: The total amount of data that can be stored in the cache...
         type: implementation-specific
         constraints: []
       - name: cache_organization
-        description: Organization of the cache
+        description: The structure and arrangement of the cache...
         type: implementation-specific
         constraints: []
       - name: cache_block_size
-        description: Size of a cache block
+        description: The size of each cache block...
         type: implementation-specific
         constraints:
-          - Contiguous, naturally aligned power-of-two (NAPOT) range of memory locations
-          - Uniform throughout the system in the initial set of CMO extensions
+          - Shall be uniform throughout system in initial CMO extensions
   - source: Privileged Spec 2.1
     parameters: []
+  - source: Custom Test Spec 3.1
+    parameters:
+      - name: vector_register_length
+        description: The length of the vector registers...
+        type: implementation-defined
+        constraints:
+          - Must be a power of two
+          - Must be between 32 and 65536 bits
 ```
 
 ---
 
 ## Observations & Key Results
 
-- **Snippet 1 (Spec 19.3.1)**: Successfully identifies genuine implementation-variable properties (`cache_capacity`, `cache_organization`, `cache_block_size`) while extracting constraints such as power-of-two alignment and system uniformity.
+- **Snippet 1 (Spec 19.3.1)**: Successfully identifies genuine implementation-variable properties (`cache_capacity`, `cache_organization`, `cache_block_size`) while extracting constraints such as system uniformity.
 - **Snippet 2 (Spec 2.1)**: Correctly identifies that standard 12-bit CSR encoding spaces and privilege mapping conventions are fixed ISA specifications rather than implementation parameters, returning `[]` without hardcoding.
-#
+- **Snippet 3 (Custom Test 3.1)**: Dynamically extracts vector register length (`vector_register_length`) and correctly parses both power-of-two and bit-width range constraints.
