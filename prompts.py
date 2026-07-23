@@ -1,10 +1,4 @@
-"""Prompts for RISC-V Architectural Parameter Extraction and Verification.
-
-This file contains:
-1. INITIAL_EXTRACTOR_PROMPT: Naive keyword-driven baseline prompt (preserved for methodology documentation).
-2. REFINED_EXTRACTOR_PROMPT: Stage 1 prompt distinguishing implementation-variable choices from fixed ISA constants.
-3. VERIFIER_PROMPT: Stage 2 prompt for verification and hallucination control.
-"""
+"""Prompts for RISC-V Architectural Parameter Extraction and Verification."""
 
 # Initial Naive Baseline (Preserved for comparison/documentation)
 INITIAL_EXTRACTOR_PROMPT = """

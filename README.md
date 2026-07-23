@@ -15,11 +15,11 @@ Extract implementation-variable architectural parameters (such as cache capaciti
 ```text
 RISC-V Specification Snippet
              ↓
-    Stage 1: OpenAI Extractor
+    Stage 1: Extractor LLM
              ↓
     Candidate Parameters
              ↓
-    Stage 2: OpenAI Verifier (Hallucination Control)
+    Stage 2: Verifier LLM (Hallucination Control)
              ↓
     Validated Parameters
              ↓
@@ -31,12 +31,14 @@ RISC-V Specification Snippet
 ## Setup Instructions
 
 1. **Clone & Navigate**:
+
    ```bash
    git clone https://github.com/dhruvil-codes/riscv-parameter-extractor.git
    cd riscv-parameter-extractor
    ```
 
 2. **Create & Activate Virtual Environment** (Optional but recommended):
+
    ```bash
    python -m venv venv
    # On Windows:
@@ -46,6 +48,7 @@ RISC-V Specification Snippet
    ```
 
 3. **Install Dependencies**:
+
    ```bash
    pip install -r requirements.txt
    ```
@@ -88,17 +91,22 @@ The script will process all snippets in `snippets.py`, execute the 2-stage OpenA
 ## Prompt Design & Refinement
 
 ### Initial Approach
-A basic single-pass prompt (`INITIAL_EXTRACTOR_PROMPT` in `prompts.py`) instructed the model to extract architectural parameters based on keyword indicators like *"may"*, *"optional"*, *"should"*, and *"implementation-specific"*.
+
+A basic single-pass prompt (`INITIAL_EXTRACTOR_PROMPT` in `prompts.py`) instructed the model to extract architectural parameters based on keyword indicators like _"may"_, _"optional"_, _"should"_, and _"implementation-specific"_.
 
 ### Problem Identified
+
 Keyword-driven extraction produced false positives. Descriptive architectural facts and fixed numbers (e.g. 12-bit encoding spaces, CSR privilege mapping rules) were incorrectly extracted as configurable parameters simply because they appeared in the text.
 
 ### Refinement (`REFINED_EXTRACTOR_PROMPT`)
+
 The prompt was rewritten to explicitly enforce the core conceptual distinction:
-- **Parameter**: A property, value, capability, presence, or size that *varies between conforming implementations*.
+
+- **Parameter**: A property, value, capability, presence, or size that _varies between conforming implementations_.
 - **Fixed Constant / ISA Rule**: A mandated specification property (e.g. CSR 12-bit address space) that is invariant.
 
 ### Additional Safeguard (`VERIFIER_PROMPT`)
+
 A second LLM verification stage was added to audit candidates. The verifier verifies grounding in text, checks for implementation variability, prunes fixed constants, and enforces strict schema compliance.
 
 ---
@@ -106,6 +114,7 @@ A second LLM verification stage was added to audit candidates. The verifier veri
 ## Hallucination-Control Strategy
 
 The two-stage design provides robust hallucination mitigation:
+
 1. **Zero External Knowledge Grounding**: Prompts strictly instruct the model not to invent or infer parameters outside the text.
 2. **Deterministic Sampling**: Generation temperature is set to `0.0`.
 3. **Structured Schema Enforcement**: Output is constrained to Pydantic schemas (`ParameterList`).
